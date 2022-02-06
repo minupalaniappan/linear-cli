@@ -5,6 +5,7 @@ const yargs = require('yargs/yargs')
 const { hideBin } = require('yargs/helpers')
 const argv = yargs(hideBin(process.argv)).argv
 const first = require('lodash/first')
+const get = require('lodash/get')
 
 /**
  * Initialize Local Storage if it has not been initialized before.
@@ -17,7 +18,9 @@ if (typeof localStorage === 'undefined' || localStorage === null) {
 
 class Linear {
   COMMAND_MAPPING = {
-    key: this.getKey
+    'get-key': this.getKey,
+    'set-key': this.setKey,
+    'get-client': this.getClient
   }
 
   constructor() {
@@ -25,11 +28,18 @@ class Linear {
   }
 
   setKey() {
-    argv.key && localStorage.setItem('apiKey', argv.key)
+    const key = get(argv, '_[1]')
+
+    if (key) {
+      localStorage.setItem('apiKey', key)
+      return `Message: API Key set to ${key}`
+    } else {
+      return `Message: API Key is not provided`
+    }
   }
 
   getKey() {
-    localStorage.getItem('apiKey')
+    return localStorage.getItem('apiKey')
   }
 
   setClient() {
@@ -38,13 +48,17 @@ class Linear {
     })
   }
 
+  getClient() {
+    return this.client
+  }
+
   async execute() {
     const command = first(argv._)
 
     if (this.COMMAND_MAPPING[command]) {
-      await this.COMMAND_MAPPING[command]()
+      console.log(await this.COMMAND_MAPPING[command]())
     } else {
-      console.error('Command not found')
+      console.error('Message: Command not found')
     }
   }
 }
