@@ -6,6 +6,10 @@ const { hideBin } = require('yargs/helpers')
 const argv = yargs(hideBin(process.argv)).argv
 const first = require('lodash/first')
 
+/**
+ * Initialize Local Storage if it has not been initialized before.
+ */
+
 if (typeof localStorage === 'undefined' || localStorage === null) {
   let LocalStorage = require('node-localstorage').LocalStorage
   localStorage = new LocalStorage('./bin/storage/tmp')
