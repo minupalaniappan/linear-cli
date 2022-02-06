@@ -10,5 +10,9 @@
     "linear": "index.js"
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "@linear/sdk": "^1.22.0",
+    "yargs": "^17.3.1"
+  }
 }
