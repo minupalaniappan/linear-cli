@@ -17,46 +17,54 @@ if (typeof localStorage === 'undefined' || localStorage === null) {
 }
 
 class Linear {
-  COMMAND_MAPPING = {
-    'get-key': this.getKey,
-    'set-key': this.setKey,
-    'get-client': this.getClient
-  }
-
   constructor() {
     this.getKey() && this.setClient()
+    this.setCommands()
   }
 
-  setKey() {
-    const key = get(argv, '_[1]')
+  setCommands = () => {
+    this.commands = {
+      'get-key': this.getKey,
+      'set-key': this.setKey,
+      'get-client': this.getClient
+    }
+  }
 
-    if (key) {
-      localStorage.setItem('apiKey', key)
-      return `Message: API Key set to ${key}`
+  getCommand = () => {
+    return get(argv, '_[1]')
+  }
+
+  setKey = () => {
+    const key_ = this.getCommand()
+
+    if (key_) {
+      localStorage.setItem('apiKey', key_)
+      key = key_
+      return `Message: API Key set to ${key_}`
     } else {
       return `Message: API Key is not provided`
     }
   }
 
-  getKey() {
+  getKey = () => {
     return localStorage.getItem('apiKey')
   }
 
-  setClient() {
+  setClient = () => {
     this.client = new LinearClient({
       apiKey: this.getKey()
     })
   }
 
-  getClient() {
+  getClient = () => {
     return this.client
   }
 
-  async execute() {
+  execute = async () => {
     const command = first(argv._)
 
-    if (this.COMMAND_MAPPING[command]) {
-      console.log(await this.COMMAND_MAPPING[command]())
+    if (this.commands[command]) {
+      console.log(await this.commands[command]())
     } else {
       console.error('Message: Command not found')
     }
