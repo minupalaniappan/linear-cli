@@ -4,20 +4,19 @@ const { LinearClient } = require('@linear/sdk')
 const { exec } = require('child_process')
 const yargs = require('yargs/yargs')
 const { hideBin } = require('yargs/helpers')
-const argv = yargs(hideBin(process.argv)).argv
 const first = require('lodash/first')
 const last = require('lodash/last')
 const pick = require('lodash/pick')
 const get = require('lodash/get')
 const MarkdownIt = require('markdown-it')
 const { convert: toHTML } = require('html-to-text')
+const prompt = require('prompt')
+
+const argv = yargs(hideBin(process.argv)).argv
 
 const LINEAR_ISSUE_URL = 'linear://middesk/issue/'
 const LINEAR_WEB_URL = 'https://linear.app/middesk/issue/'
-
-/**
- * Initialize Local Storage if it has not been initialized before.
- */
+const WORD_WRAP_COUNT = 80
 
 if (typeof localStorage === 'undefined' || localStorage === null) {
   let LocalStorage = require('node-localstorage').LocalStorage
@@ -26,76 +25,43 @@ if (typeof localStorage === 'undefined' || localStorage === null) {
 
 class Linear {
   constructor() {
-    this.getKey() && this.setClient()
-    this.setCommands()
-    this.setMD()
+    this.markdown = null
+    this.client = null
+    this.apikey = null
+    this.ticketName = null
+    this.commands = this.getCommands()
   }
 
-  setMD = () => {
-    this.md = new MarkdownIt()
+  /* CLI HELPER FUNCTION IMPLEMENTATION */
+
+  initialize = async () => {
+    this.markdown = new MarkdownIt()
+    this.apikey = await this.getOrSetAPIKey()
+    this.client = await this.setAPIClient()
+    this.ticketName = await this.setTicketName()
   }
 
-  setCommands = () => {
-    this.commands = {
-      'get-key': this.getKey,
-      'set-key': this.setKey,
-      'get-client': this.getClient,
-      info: this.describeCurrentTicket,
-      'get-id': this.getBranchId,
-      open: this.openLinearTicket,
-      issue: this.createSubIssue,
-      me: this.getUser
-    }
-  }
+  getCommands = () => ({
+    key: this.getOrSetAPIKey,
+    info: this.getTicketDetails,
+    open: this.openLinearTicket,
+    new: this.createSubIssue,
+    clear: this.deleteStorage,
+    me: this.getOrSetUser,
+    team: this.getTeam
+  })
 
-  getCommand = () => {
+  getArgument = () => {
     return get(argv, '_[1]')
   }
 
-  setKey = () => {
-    const key_ = this.getCommand()
-
-    if (key_) {
-      localStorage.setItem('apiKey', key_)
-      return `Info: API Key set to ${key_}`
-    } else {
-      throw `API Key is not provided`
-    }
-  }
-
-  getKey = () => {
-    return localStorage.getItem('apiKey')
-  }
-
-  setClient = () => {
-    this.client = new LinearClient({
-      apiKey: this.getKey()
+  setAPIClient = () => {
+    return new LinearClient({
+      apiKey: this.apikey
     })
   }
 
-  getClient = () => {
-    if (!this.client) {
-      throw `Unable to get client`
-    }
-
-    return this.client
-  }
-
-  getUser = async () => {
-    await this.setUser()
-
-    return pick(this.user, ['displayName', 'email', 'id'])
-  }
-
-  setUser = async () => {
-    if (!this.user) {
-      const user = await this.client.viewer
-
-      this.user = user
-    }
-  }
-
-  getBranch = () => {
+  getBranchName = () => {
     return new Promise((resolve) => {
       return exec('git rev-parse --abbrev-ref HEAD', (err, stdout) => {
         if (err) {
@@ -109,93 +75,93 @@ class Linear {
     })
   }
 
-  branchToId = (branch) => {
+  branchToTicketName = (branch) => {
     const tokens = last(branch.split('/')).split('-')
 
     if (tokens.length > 2) {
       return `${tokens[0].toUpperCase()}-${tokens[1].toUpperCase()}`
-    } else {
-      throw `Unable to parse branch from ID`
     }
+
+    throw 'Unable to find the ticket name in the branch'
   }
 
-  createSubIssue = async ({ title, description }) => {
-    const { id } = await this.setUser()
+  setTicketName = async () => {
+    const branch = await this.getBranchName()
+    const ticketName = this.branchToTicketName(branch)
 
-    console.log(id)
+    this.ticketName = ticketName
+
+    return ticketName
+  }
+
+  getTeamName = () => {
+    return first(this.ticketName.split('-'))
+  }
+
+  /* CLI FUNCTION IMPLEMENTATION */
+
+  deleteStorage = () => localStorage.clear()
+
+  getOrSetAPIKey = async () => {
+    let key = localStorage.getItem('apikey')
+
+    if (!key) {
+      const { apikey } = await prompt.get(['apikey'])
+
+      key = apikey
+      localStorage.setItem('apikey', key)
+    }
+
+    return key
+  }
+
+  getOrSetUser = async () => {
+    let me = JSON.parse(localStorage.getItem('me'))
+
+    if (!me) {
+      me = await this.client.viewer
+    }
+
+    localStorage.setItem('me', JSON.stringify(me))
+
+    return me
+  }
+
+  createSubIssue = async () => {
+    const { id: assigneeId } = await this.getUser()
+    const { title, description } = await prompt.get(['title', 'description'])
+    const { id: parentId } = await this.getTicketDetails()
+    const { id: teamId } = await this.getTeam()
+
+    return this.getClient()
+      .issueCreate({
+        assigneeId,
+        parentId,
+        title,
+        description,
+        teamId
+      })
+      .then((e) => e)
   }
 
   openLinearTicket = async () => {
-    const id = await this.getBranchId()
-
-    if (id) {
-      try {
-        exec(`open ${LINEAR_ISSUE_URL}${id}`)
-      } catch {
-        exec(`open ${LINEAR_WEB_URL}${id}`)
-      }
-    } else {
-      throw `Error: Unable to find ticket with id ${id}`
-    }
-
-    return 'Info: Ticket opened!'
-  }
-
-  findAssociatedLinearTicket = async (ticketId) => {
-    const item = await this.client.client.rawRequest(
-      `
-      query issue($id: String!) {
-        issue(id: $id) {
-          id
-          title
-          completedAt
-          description
-        }
-      }`,
-      { id: ticketId }
-    )
-
-    return item
-  }
-
-  describeCurrentTicket = async () => {
-    const id = await this.getBranchId()
-
-    let ticketPayload = null
-
-    if (id) {
-      ticketPayload = await this.findAssociatedLinearTicket(id)
-    } else {
-      throw `Error: Unable to find ticket with id ${id}`
-    }
-
-    if (ticketPayload.status === 200) {
-      const {
-        data: { issue }
-      } = ticketPayload
-
-      return `Title: ${issue.title} \n${
-        issue.completedAt ? `Completed At: ${issue.completedAt} \n` : ''
-      }${
-        issue.description
-          ? `${toHTML(
-              this.md.render(issue.description, {
-                wordwrap: 80
-              })
-            ).replace('DESCRIPTION', 'Description:')}`
-          : ''
-      }
-      `
-    } else {
-      throw `Unable to get valid response from Linear API`
+    try {
+      exec(`open ${LINEAR_ISSUE_URL}${this.ticketName}`)
+    } catch {
+      exec(`open ${LINEAR_WEB_URL}${this.ticketName}`)
     }
   }
 
-  getBranchId = async () => {
-    const branch = await this.getBranch()
-    const id = this.branchToId(branch)
+  getTicketDetails = async () => {
+    return this.client
+      .issue(this.ticketName)
+      .then((e) =>
+        pick(e, ['id', 'branchName', 'description', 'title', 'completedAt'])
+      )
+  }
 
-    return id
+  getTeam = async () => {
+    return this.client.team(this.getTeamName())
   }
 
   execute = async () => {
@@ -203,12 +169,17 @@ class Linear {
 
     if (this.commands[command]) {
       try {
-        console.log(await this.commands[command]())
+        await this.initialize()
+        console.info(`Info: ${await this.commands[command]()}`)
       } catch (e) {
         console.error(`Error: ${e}`)
       }
     } else {
-      console.error('Error: Command not found')
+      if (!command) {
+        console.error('Error: No command provided')
+      } else {
+        console.error('Error: Command not found')
+      }
     }
   }
 }
