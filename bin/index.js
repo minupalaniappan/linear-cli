@@ -16,7 +16,6 @@ const argv = yargs(hideBin(process.argv)).argv
 
 const LINEAR_ISSUE_URL = 'linear://middesk/issue/'
 const LINEAR_WEB_URL = 'https://linear.app/middesk/issue/'
-const WORD_WRAP_COUNT = 80
 
 if (typeof localStorage === 'undefined' || localStorage === null) {
   let LocalStorage = require('node-localstorage').LocalStorage
@@ -30,6 +29,8 @@ class Linear {
     this.apikey = null
     this.ticketName = null
     this.commands = this.getCommands()
+
+    prompt.start()
   }
 
   /* CLI HELPER FUNCTION IMPLEMENTATION */
@@ -108,8 +109,9 @@ class Linear {
     if (!key) {
       const { apikey } = await prompt.get(['apikey'])
 
-      key = apikey
-      localStorage.setItem('apikey', key)
+      localStorage.setItem('apikey', apikey)
+
+      return apikey
     }
 
     return key
@@ -124,7 +126,7 @@ class Linear {
 
     localStorage.setItem('me', JSON.stringify(me))
 
-    return me
+    return pick(me, ['displayName', 'email', 'id', 'name'])
   }
 
   createSubIssue = async () => {
@@ -156,7 +158,7 @@ class Linear {
     return this.client
       .issue(this.ticketName)
       .then((e) =>
-        pick(e, ['id', 'branchName', 'description', 'title', 'completedAt'])
+        pick(e, ['title', 'description', 'branchName', 'completedAt'])
       )
   }
 
@@ -170,7 +172,7 @@ class Linear {
     if (this.commands[command]) {
       try {
         await this.initialize()
-        console.info(`Info: ${await this.commands[command]()}`)
+        console.info(await this.commands[command]())
       } catch (e) {
         console.error(`Error: ${e}`)
       }
