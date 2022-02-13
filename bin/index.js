@@ -146,6 +146,8 @@ class Linear {
       .then(async (issue) => {
         const newIssue = await issue.issue
 
+        await exec(`git branch -m ${newIssue.branchName}`)
+
         return pick(newIssue, [
           'title',
           'description',
