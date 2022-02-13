@@ -7,6 +7,7 @@ const { hideBin } = require('yargs/helpers')
 const argv = yargs(hideBin(process.argv)).argv
 const first = require('lodash/first')
 const last = require('lodash/last')
+const pick = require('lodash/pick')
 const get = require('lodash/get')
 const MarkdownIt = require('markdown-it')
 const { convert: toHTML } = require('html-to-text')
@@ -41,7 +42,9 @@ class Linear {
       'get-client': this.getClient,
       info: this.describeCurrentTicket,
       'get-id': this.getBranchId,
-      open: this.openLinearTicket
+      open: this.openLinearTicket,
+      issue: this.createSubIssue,
+      me: this.getUser
     }
   }
 
@@ -78,6 +81,20 @@ class Linear {
     return this.client
   }
 
+  getUser = async () => {
+    await this.setUser()
+
+    return pick(this.user, ['displayName', 'email', 'id'])
+  }
+
+  setUser = async () => {
+    if (!this.user) {
+      const user = await this.client.viewer
+
+      this.user = user
+    }
+  }
+
   getBranch = () => {
     return new Promise((resolve) => {
       return exec('git rev-parse --abbrev-ref HEAD', (err, stdout) => {
@@ -100,6 +117,12 @@ class Linear {
     } else {
       throw `Unable to parse branch from ID`
     }
+  }
+
+  createSubIssue = async ({ title, description }) => {
+    const { id } = await this.setUser()
+
+    console.log(id)
   }
 
   openLinearTicket = async () => {
