@@ -130,12 +130,12 @@ class Linear {
   }
 
   createSubIssue = async () => {
-    const { id: assigneeId } = await this.getUser()
+    const { id: assigneeId } = await this.getOrSetUser()
     const { title, description } = await prompt.get(['title', 'description'])
     const { id: parentId } = await this.getTicketDetails()
     const { id: teamId } = await this.getTeam()
 
-    return this.getClient()
+    return this.client
       .issueCreate({
         assigneeId,
         parentId,
@@ -143,7 +143,16 @@ class Linear {
         description,
         teamId
       })
-      .then((e) => e)
+      .then(async (issue) => {
+        const newIssue = await issue.issue
+
+        return pick(newIssue, [
+          'title',
+          'description',
+          'branchName',
+          'createdAt'
+        ])
+      })
   }
 
   openLinearTicket = async () => {
