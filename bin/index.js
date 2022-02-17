@@ -10,12 +10,14 @@ const pick = require('lodash/pick')
 const get = require('lodash/get')
 const MarkdownIt = require('markdown-it')
 const { convert: toHTML } = require('html-to-text')
+const fs = require('fs')
 const prompt = require('prompt')
+const waitOn = require('wait-on')
 
 const argv = yargs(hideBin(process.argv)).argv
 
-const LINEAR_ISSUE_URL = 'linear://middesk/issue/'
-const LINEAR_WEB_URL = 'https://linear.app/middesk/issue/'
+const LINEAR_APP_PATH = '/Applications/Linear.app/'
+const LINEAR_NETWORK_RESOURCE = 'https://linear.app'
 
 if (typeof localStorage === 'undefined' || localStorage === null) {
   let LocalStorage = require('node-localstorage').LocalStorage
@@ -37,6 +39,7 @@ class Linear {
 
   initialize = async () => {
     this.markdown = new MarkdownIt()
+    this.organization = await this.getOrSetOrganization()
     this.apikey = await this.getOrSetAPIKey()
     this.client = await this.setAPIClient()
     this.ticketName = await this.setTicketName()
@@ -117,6 +120,20 @@ class Linear {
     return key
   }
 
+  getOrSetOrganization = async () => {
+    let currentOrganization = localStorage.getItem('organization')
+
+    if (!currentOrganization) {
+      const { organization } = await prompt.get(['organization'])
+
+      localStorage.setItem('organization', organization)
+
+      return organization
+    }
+
+    return currentOrganization
+  }
+
   getOrSetUser = async () => {
     let me = JSON.parse(localStorage.getItem('me'))
 
@@ -157,11 +174,29 @@ class Linear {
       })
   }
 
+  getAppLinearIssue = () => {
+    return `linear://${this.organization}/issue/${this.ticketName}`
+  }
+
+  getWebLinearIssue = () => {
+    return `https://linear.app/${this.organization}/issue/${this.ticketName}`
+  }
+
   openLinearTicket = async () => {
-    try {
-      exec(`open ${LINEAR_ISSUE_URL}${this.ticketName}`)
-    } catch {
-      exec(`open ${LINEAR_WEB_URL}${this.ticketName}`)
+    const linearExists = fs.existsSync(LINEAR_APP_PATH)
+
+    if (linearExists) {
+      exec(`open ${this.getAppLinearIssue()}`)
+
+      await waitOn({
+        resources: [LINEAR_NETWORK_RESOURCE],
+        interval: 100,
+        followRedirect: true
+      }).then(() => {
+        console.log('Done!')
+      })
+    } else {
+      exec(`open ${this.getWebLinearIssue()}`)
     }
   }
 
