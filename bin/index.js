@@ -17,7 +17,7 @@ const waitOn = require('wait-on')
 const argv = yargs(hideBin(process.argv)).argv
 
 const LINEAR_APP_PATH = '/Applications/Linear.app/'
-const LINEAR_NETWORK_RESOURCE = 'https://linear.app'
+const WEB_RESOURCE = 'https://linear.app/'
 
 if (typeof localStorage === 'undefined' || localStorage === null) {
   let LocalStorage = require('node-localstorage').LocalStorage
@@ -179,7 +179,11 @@ class Linear {
   }
 
   getWebLinearIssue = () => {
-    return `https://linear.app/${this.organization}/issue/${this.ticketName}`
+    return `${WEB_RESOURCE}${this.organization}/issue/${this.ticketName}`
+  }
+
+  getIssueUrl = () => {
+    return `${WEB_RESOURCE}${this.organization}/issue/${this.ticketName}`
   }
 
   openLinearTicket = async () => {
@@ -187,14 +191,6 @@ class Linear {
 
     if (linearExists) {
       exec(`open ${this.getAppLinearIssue()}`)
-
-      await waitOn({
-        resources: [LINEAR_NETWORK_RESOURCE],
-        interval: 100,
-        followRedirect: true
-      }).then(() => {
-        console.log('Done!')
-      })
     } else {
       exec(`open ${this.getWebLinearIssue()}`)
     }
