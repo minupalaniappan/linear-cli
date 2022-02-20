@@ -9,7 +9,7 @@ LinearCLI is a command line interface to accompany the native and web Linear exp
 ## Install
 
 ```
-npm install -g linearcli
+npm install -g @logray/linear-cli
 ```
 
 ## Commands
