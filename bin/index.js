@@ -50,7 +50,7 @@ class Linear {
     branch: () => this.getTicketDetails().then(this.printAttributes),
     open: () =>
       this.openLinearTicket().then((info) => this.printAttributes({ info })),
-    new: () => this.createSubIssue.then(this.printAttributes),
+    new: () => this.createSubIssue().then(this.printAttributes),
     clear: () =>
       this.deleteStorage().then((info) => this.printAttributes({ info })),
     me: () => this.getOrSetUser().then(this.printAttributes),
@@ -154,6 +154,8 @@ class Linear {
     const { id: parentId } = await this.getTicketDetails()
     const { id: teamId } = await this.getTeam()
 
+    console.info('Info: Creating sub issue...')
+
     return this.client
       .issueCreate({
         assigneeId,
@@ -163,8 +165,6 @@ class Linear {
         teamId
       })
       .then(async (issue) => {
-        console.info('Info: Creating sub issue...')
-
         const newIssue = await issue.issue
 
         console.info('Info: Created new sub issue!')
@@ -172,6 +172,8 @@ class Linear {
         await exec(`git branch -m ${newIssue.branchName}`)
 
         console.info(`Info: Switched to new branch ${newIssue.branchName}`)
+
+        console.info(`\n----- \n`)
 
         return pick(newIssue, ['title', 'branchName', 'createdAt'])
       })
