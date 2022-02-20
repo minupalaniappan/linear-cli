@@ -50,8 +50,9 @@ class Linear {
     branch: () => this.getTicketDetails().then(this.printAttributes),
     open: () =>
       this.openLinearTicket().then((info) => this.printAttributes({ info })),
-    new: this.createSubIssue,
-    clear: this.deleteStorage,
+    new: () => this.createSubIssue.then(this.printAttributes),
+    clear: () =>
+      this.deleteStorage().then((info) => this.printAttributes({ info })),
     me: () => this.getOrSetUser().then(this.printAttributes),
     team: () => this.getTeam().then(this.printAttributes)
   })
@@ -110,7 +111,11 @@ class Linear {
 
   /* CLI FUNCTION IMPLEMENTATION */
 
-  deleteStorage = () => localStorage.clear()
+  deleteStorage = () => {
+    localStorage.clear()
+
+    return Promise.resolve('Storage has been cleared!')
+  }
 
   getOrSetAPIKey = async () => {
     let key = localStorage.getItem('apikey')
@@ -158,9 +163,15 @@ class Linear {
         teamId
       })
       .then(async (issue) => {
+        console.info('Info: Creating sub issue...')
+
         const newIssue = await issue.issue
 
+        console.info('Info: Created new sub issue!')
+
         await exec(`git branch -m ${newIssue.branchName}`)
+
+        console.info(`Info: Switched to new branch ${newIssue.branchName}`)
 
         return pick(newIssue, ['title', 'branchName', 'createdAt'])
       })
@@ -215,7 +226,7 @@ class Linear {
   getTeam = async () =>
     this.client
       .team(this.getTeamName())
-      .then((e) => pick(e, ['key', 'name', 'cycleDuration', 'createdAt']))
+      .then((e) => pick(e, ['id', 'key', 'name', 'cycleDuration', 'createdAt']))
 
   printAttributes = (item) => {
     return Object.keys(item)
@@ -246,5 +257,3 @@ class Linear {
 }
 
 new Linear().execute()
-
-
