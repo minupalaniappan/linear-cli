@@ -191,6 +191,8 @@ class Linear {
 
     if (linearExists) {
       exec(`open ${this.getAppLinearIssue()}`)
+      await sleep(5)
+      exec(`open ${this.getAppLinearIssue()}`)
     } else {
       exec(`open ${this.getWebLinearIssue()}`)
     }
