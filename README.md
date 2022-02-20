@@ -36,3 +36,7 @@ Find ticket information about the current branch.
 `linear open`
 
 Open the current branch in Linear native or Linear web.
+
+`linear new`
+
+Create a sub issue from the current branch - you will be prompted for a title and description of the new sub issue.
