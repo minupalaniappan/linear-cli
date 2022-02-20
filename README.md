@@ -64,3 +64,11 @@ You have not provided a single argument for LinearCLI to execute as a command.
 `Command not found`
 
 The current command is not supported by LinearCLI.
+
+## Roadmap
+
+Coming soon.
+
+## Troubleshooting
+
+[File an issue here, or request a command here!](https://github.com/minupalaniappan/linear-cli/issues/new)
