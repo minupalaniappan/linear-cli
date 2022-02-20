@@ -204,7 +204,18 @@ class Linear {
   getTicketDetails = async () => {
     return this.client
       .issue(this.ticketName)
-      .then((e) => pick(e, ['title', 'branchName', 'completedAt']))
+      .then((e) =>
+        pick(e, [
+          'title',
+          'branchName',
+          'identifier',
+          'createdAt',
+          'startedAt',
+          'completedAt',
+          'status',
+          'url'
+        ])
+      )
   }
 
   getTeam = async () =>
