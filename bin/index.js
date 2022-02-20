@@ -8,16 +8,16 @@ const first = require('lodash/first')
 const last = require('lodash/last')
 const pick = require('lodash/pick')
 const get = require('lodash/get')
-const MarkdownIt = require('markdown-it')
-const { convert: toHTML } = require('html-to-text')
 const fs = require('fs')
 const prompt = require('prompt')
-const waitOn = require('wait-on')
+const { sleep } = require('sleep')
+const startCase = require('lodash/startCase')
 
 const argv = yargs(hideBin(process.argv)).argv
 
 const LINEAR_APP_PATH = '/Applications/Linear.app/'
 const WEB_RESOURCE = 'https://linear.app/'
+const SLEEP_TIME = 5
 
 if (typeof localStorage === 'undefined' || localStorage === null) {
   let LocalStorage = require('node-localstorage').LocalStorage
@@ -26,7 +26,6 @@ if (typeof localStorage === 'undefined' || localStorage === null) {
 
 class Linear {
   constructor() {
-    this.markdown = null
     this.client = null
     this.apikey = null
     this.ticketName = null
@@ -36,9 +35,7 @@ class Linear {
   }
 
   /* CLI HELPER FUNCTION IMPLEMENTATION */
-
   initialize = async () => {
-    this.markdown = new MarkdownIt()
     this.organization = await this.getOrSetOrganization()
     this.apikey = await this.getOrSetAPIKey()
     this.client = await this.setAPIClient()
@@ -46,13 +43,15 @@ class Linear {
   }
 
   getCommands = () => ({
-    key: this.getOrSetAPIKey,
-    info: this.getTicketDetails,
-    open: this.openLinearTicket,
+    key: () =>
+      this.getOrSetAPIKey().then((apiKey) => this.printAttributes({ apiKey })),
+    branch: () => this.getTicketDetails().then(this.printAttributes),
+    open: () =>
+      this.openLinearTicket().then((info) => this.printAttributes({ info })),
     new: this.createSubIssue,
     clear: this.deleteStorage,
-    me: this.getOrSetUser,
-    team: this.getTeam
+    me: () => this.getOrSetUser().then(this.printAttributes),
+    team: () => this.getTeam().then(this.printAttributes)
   })
 
   getArgument = () => {
@@ -111,13 +110,12 @@ class Linear {
 
     if (!key) {
       const { apikey } = await prompt.get(['apikey'])
-
       localStorage.setItem('apikey', apikey)
 
-      return apikey
+      key = apikey
     }
 
-    return key
+    return Promise.resolve(key)
   }
 
   getOrSetOrganization = async () => {
@@ -143,7 +141,7 @@ class Linear {
 
     localStorage.setItem('me', JSON.stringify(me))
 
-    return pick(me, ['displayName', 'email', 'id', 'name'])
+    return pick(me, ['displayName', 'email', 'name'])
   }
 
   createSubIssue = async () => {
@@ -165,12 +163,7 @@ class Linear {
 
         await exec(`git branch -m ${newIssue.branchName}`)
 
-        return pick(newIssue, [
-          'title',
-          'description',
-          'branchName',
-          'createdAt'
-        ])
+        return pick(newIssue, ['title', 'branchName', 'createdAt'])
       })
   }
 
@@ -191,23 +184,30 @@ class Linear {
 
     if (linearExists) {
       exec(`open ${this.getAppLinearIssue()}`)
-      await sleep(5)
+      await sleep(SLEEP_TIME)
       exec(`open ${this.getAppLinearIssue()}`)
     } else {
       exec(`open ${this.getWebLinearIssue()}`)
     }
+
+    return Promise.resolve('Opened ticket!')
   }
 
   getTicketDetails = async () => {
     return this.client
       .issue(this.ticketName)
-      .then((e) =>
-        pick(e, ['title', 'description', 'branchName', 'completedAt'])
-      )
+      .then((e) => pick(e, ['title', 'branchName', 'completedAt']))
   }
 
-  getTeam = async () => {
-    return this.client.team(this.getTeamName())
+  getTeam = async () =>
+    this.client
+      .team(this.getTeamName())
+      .then((e) => pick(e, ['key', 'name', 'cycleDuration', 'createdAt']))
+
+  printAttributes = (item) => {
+    return Object.keys(item)
+      .map((e) => `${startCase(e)}: ${item[e]}`)
+      .join('\n')
   }
 
   execute = async () => {
