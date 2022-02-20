@@ -39,7 +39,6 @@ class Linear {
 
   /* CLI HELPER FUNCTION IMPLEMENTATION */
   initialize = async () => {
-    this.organization = await this.getOrSetOrganization()
     this.apikey = await this.getOrSetAPIKey()
     this.client = await this.setAPIClient()
     this.ticketName = await this.setTicketName()
@@ -126,18 +125,10 @@ class Linear {
     return Promise.resolve(key)
   }
 
-  getOrSetOrganization = async () => {
-    let currentOrganization = localStorage.getItem('organization')
+  getOrganization = async () => {
+    const { url } = await this.getTicketDetails()
 
-    if (!currentOrganization) {
-      const { organization } = await prompt.get(['organization'])
-
-      localStorage.setItem('organization', organization)
-
-      return organization
-    }
-
-    return currentOrganization
+    return url.split('/').at(2)
   }
 
   getOrSetUser = async () => {
@@ -175,27 +166,30 @@ class Linear {
       })
   }
 
-  getAppLinearIssue = () => {
-    return `linear://${this.organization}/issue/${this.ticketName}`
+  getAppLinearIssue = async () => {
+    const organization = await this.getOrganization()
+
+    return `linear://${organization}/issue/${this.ticketName}`
   }
 
-  getWebLinearIssue = () => {
-    return `${WEB_RESOURCE}${this.organization}/issue/${this.ticketName}`
-  }
+  getWebLinearIssue = async () => {
+    const organization = await this.getOrganization()
 
-  getIssueUrl = () => {
-    return `${WEB_RESOURCE}${this.organization}/issue/${this.ticketName}`
+    return `${WEB_RESOURCE}${organization}/issue/${this.ticketName}`
   }
 
   openLinearTicket = async () => {
     const linearExists = fs.existsSync(LINEAR_APP_PATH)
 
     if (linearExists) {
-      exec(`open ${this.getAppLinearIssue()}`)
+      const appURL = await this.getAppLinearIssue()
+
+      exec(`open ${appURL}`)
       await sleep(SLEEP_TIME)
-      exec(`open ${this.getAppLinearIssue()}`)
+      exec(`open ${appURL}`)
     } else {
-      exec(`open ${this.getWebLinearIssue()}`)
+      const webURL = await this.getWebLinearIssue()
+      exec(`open ${webURL}`)
     }
 
     return Promise.resolve('Opened ticket!')
