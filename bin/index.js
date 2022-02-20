@@ -24,12 +24,15 @@ if (typeof localStorage === 'undefined' || localStorage === null) {
   localStorage = new LocalStorage('/tmp/linear-cli/storage')
 }
 
+const BRANCH_REQUIRED_COMMANDS = ['branch', 'open', 'new', 'team']
+
 class Linear {
   constructor() {
     this.client = null
     this.apikey = null
     this.ticketName = null
     this.commands = this.getCommands()
+    this.currentCommand = null
 
     prompt.start()
   }
@@ -64,14 +67,17 @@ class Linear {
     })
   }
 
+  branchRequiredCommand = () =>
+    BRANCH_REQUIRED_COMMANDS.includes(this.currentCommand)
+
   getBranchName = () => {
     return new Promise((resolve) => {
       return exec('git rev-parse --abbrev-ref HEAD', (err, stdout) => {
-        if (err) {
+        if (err && this.branchRequiredCommand()) {
           throw 'Unable to read current branch'
         } else if (typeof stdout === 'string') {
           resolve(stdout.trim())
-        } else {
+        } else if (this.branchRequiredCommand()) {
           throw 'Unable to identify branch'
         }
       })
@@ -85,7 +91,9 @@ class Linear {
       return `${tokens[0].toUpperCase()}-${tokens[1].toUpperCase()}`
     }
 
-    throw 'Unable to find the ticket name in the branch'
+    if (this.branchRequiredCommand()) {
+      throw 'Unable to find the ticket name in the branch'
+    }
   }
 
   setTicketName = async () => {
@@ -214,6 +222,8 @@ class Linear {
     const command = first(argv._)
 
     if (this.commands[command]) {
+      this.currentCommand = command
+
       try {
         await this.initialize()
         console.info(await this.commands[command]())
