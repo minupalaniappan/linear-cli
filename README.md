@@ -4,7 +4,7 @@
 
 ## Intro
 
-LinearCLI is a command line interface to accompany the native and web Linear experience. At times, it can be hard to manage your [Linear](https://github.com/linear) issues through the UI, especially when you have to chase down the application or web window. When you're deep in development, you sometimes just want to update tasks from the comfort of your command line.
+LinearCLI is a command line interface to accompany the native and web Linear experience. At times, it can be hard to manage your [Linear](https://github.com/linear) issues through a user interface, especially when you have to chase down the application or browser window. When you're deep in development, you sometimes just want to update tasks from the comfort of your command line or IDE.
 
 ## Install
 
