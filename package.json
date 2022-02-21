@@ -1,5 +1,5 @@
 {
-  "name": "@logray/linear-cli",
+  "name": "@minupalaniappan/linear-cli",
   "version": "1.0.0",
   "description": "",
   "main": "bin/index.js",
@@ -22,6 +22,6 @@
     "url": "https://github.com/minupalaniappan/linear-cli"
   },
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com/@logray"
+    "registry": "https://npm.pkg.github.com"
   }
 }
