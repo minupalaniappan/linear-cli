@@ -24,7 +24,7 @@ if (typeof localStorage === 'undefined' || localStorage === null) {
   localStorage = new LocalStorage('/tmp/linear-cli/storage')
 }
 
-const BRANCH_REQUIRED_COMMANDS = ['branch', 'open', 'new', 'team']
+const BRANCH_REQUIRED_COMMANDS = ['branch', 'open', 'team']
 
 class Linear {
   constructor() {
@@ -50,7 +50,7 @@ class Linear {
     branch: () => this.getTicketDetails().then(this.printAttributes),
     open: () =>
       this.openLinearTicket().then((info) => this.printAttributes({ info })),
-    new: () => this.createSubIssue().then(this.printAttributes),
+    new: () => this.createIssue().then(this.printAttributes),
     clear: () =>
       this.deleteStorage().then((info) => this.printAttributes({ info })),
     me: () => this.getOrSetUser().then(this.printAttributes),
@@ -148,35 +148,51 @@ class Linear {
     return pick(me, ['displayName', 'email', 'name'])
   }
 
-  createSubIssue = async () => {
+  createIssueAPI = (attributes) => {
+    return this.client.issueCreate(attributes).then(async (issue) => {
+      const newIssue = await issue.issue
+
+      console.info('Info: Created new issue!')
+
+      await exec(`git branch -m ${newIssue.branchName}`)
+
+      console.info(`Info: Switched to new branch ${newIssue.branchName}`)
+
+      console.info(`\n----- \n`)
+
+      return pick(newIssue, ['title', 'branchName', 'createdAt'])
+    })
+  }
+
+  createIssue = async () => {
     const { id: assigneeId } = await this.getOrSetUser()
     const { title, description } = await prompt.get(['title', 'description'])
-    const { id: parentId } = await this.getTicketDetails()
-    const { id: teamId } = await this.getTeam()
 
-    console.info('Info: Creating sub issue...')
+    try {
+      const { id: parentId } = await this.getTicketDetails()
+      const { id: teamId } = await this.getTeam()
 
-    return this.client
-      .issueCreate({
+      console.info('Info: Creating issue...')
+
+      return this.createIssueAPI({
         assigneeId,
         parentId,
         title,
         description,
         teamId
       })
-      .then(async (issue) => {
-        const newIssue = await issue.issue
+    } catch {
+      const { team } = await prompt.get(['team'])
 
-        console.info('Info: Created new sub issue!')
+      const { id: teamId } = await this.getTeam(team)
 
-        await exec(`git branch -m ${newIssue.branchName}`)
-
-        console.info(`Info: Switched to new branch ${newIssue.branchName}`)
-
-        console.info(`\n----- \n`)
-
-        return pick(newIssue, ['title', 'branchName', 'createdAt'])
+      return this.createIssueAPI({
+        assigneeId,
+        title,
+        description,
+        teamId
       })
+    }
   }
 
   getAppLinearIssue = async () => {
@@ -225,10 +241,11 @@ class Linear {
       )
   }
 
-  getTeam = async () =>
-    this.client
-      .team(this.getTeamName())
+  getTeam = async (teamName) => {
+    return this.client
+      .team(teamName || this.getTeamName())
       .then((e) => pick(e, ['id', 'key', 'name', 'cycleDuration', 'createdAt']))
+  }
 
   printAttributes = (item) => {
     return Object.keys(item)
