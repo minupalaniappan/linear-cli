@@ -145,7 +145,7 @@ class Linear {
 
     localStorage.setItem('me', JSON.stringify(me))
 
-    return pick(me, ['displayName', 'email', 'name'])
+    return pick(me, ['displayName', 'email', 'name', 'id'])
   }
 
   createIssueAPI = (attributes) => {
