@@ -9,10 +9,10 @@ LinearCLI is a command line interface to accompany the native and web Linear exp
 ## Install
 
 ```
-npm install -g @logray/linear-cli
+npm install -g @minupalaniappan/linear
 ```
 
-[View on NPM](https://www.npmjs.com/package/@logray/linear-cli)
+[View on NPM](https://www.npmjs.com/package/@minupalaniappan/linear)
 
 ## Commands
 `linear key`
