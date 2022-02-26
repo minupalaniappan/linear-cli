@@ -24,8 +24,6 @@ if (typeof localStorage === 'undefined' || localStorage === null) {
   localStorage = new LocalStorage('/tmp/linear-cli/storage')
 }
 
-console.log('Hello')
-
 const BRANCH_REQUIRED_COMMANDS = ['branch', 'open', 'team']
 
 class Linear {
