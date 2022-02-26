@@ -12,6 +12,7 @@ const fs = require('fs')
 const prompt = require('prompt')
 const { sleep } = require('sleep')
 const startCase = require('lodash/startCase')
+const inquirer = require('inquirer')
 
 const argv = yargs(hideBin(process.argv)).argv
 
@@ -107,6 +108,21 @@ class Linear {
 
   getTeamName = () => {
     return first(this.ticketName.split('-'))
+  }
+
+  setTicketTeam = async () => {
+    const teams = await this.client.teams()
+
+    let teams = [], localClient = this.client
+
+    inquirer.prompt([
+      {
+        type: 'list',
+        name: 'teamName',
+        message: 'Which team owns this issue?',
+        choices: []
+      }
+    ])
   }
 
   /* CLI FUNCTION IMPLEMENTATION */
