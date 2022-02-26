@@ -24,8 +24,6 @@ if (typeof localStorage === 'undefined' || localStorage === null) {
   localStorage = new LocalStorage('/tmp/linear-cli/storage')
 }
 
-console.log('Hello')
-
 const BRANCH_REQUIRED_COMMANDS = ['branch', 'open', 'team']
 
 class Linear {
@@ -109,6 +107,21 @@ class Linear {
 
   getTeamName = () => {
     return first(this.ticketName.split('-'))
+  }
+
+  setTicketTeam = async () => {
+    const teams_ = await this.client.teams()
+
+    let teams = teams_
+
+    inquirer.prompt([
+      {
+        type: 'list',
+        name: 'teamName',
+        message: 'Which team owns this issue?',
+        choices: get(teams, 'rk.nodes').map((({ lk: { key, name, id } }) => ({ key, name, id })))
+      }
+    ])
   }
 
   /* CLI FUNCTION IMPLEMENTATION */
