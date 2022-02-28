@@ -10,6 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "@linear/sdk": "^1.22.0",
+    "clipboardy": "^3.0.0",
     "inquirer": "^8.2.0",
     "lodash": "^4.17.21",
     "node-localstorage": "^2.2.1",

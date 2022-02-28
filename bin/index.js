@@ -13,6 +13,7 @@ const prompt = require('prompt')
 const { sleep } = require('sleep')
 const startCase = require('lodash/startCase')
 const inquirer = require('inquirer')
+const clipboardy = require('clipboardy')
 
 const argv = yargs(hideBin(process.argv)).argv
 
@@ -196,8 +197,11 @@ class Linear {
       await exec(`git branch -m ${newIssue.branchName}`)
 
       console.info(`Info: Switched to new branch ${newIssue.branchName}`)
+      console.info(`Info: Copied to clipboard!`)
 
-      console.info(`\n----- \n`)
+      clipboardy.default.writeSync(newIssue.branchName)
+
+      console.info(`\n ----- \n`)
 
       return pick(newIssue, ['title', 'branchName', 'createdAt'])
     })
