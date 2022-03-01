@@ -1,15 +1,16 @@
 {
   "name": "@minupalaniappan/linear",
   "version": "3.0.1",
-  "description": "",
+  "description": "A command line interface to easily interact with Linear",
   "main": "bin/index.js",
   "bin": {
     "linear": "bin/index.js"
   },
-  "author": "",
+  "author": "Minu Palaniappan",
   "license": "ISC",
   "dependencies": {
     "@linear/sdk": "^1.22.0",
+    "inquirer": "^8.2.0",
     "lodash": "^4.17.21",
     "node-localstorage": "^2.2.1",
     "prettier": "^2.5.1",

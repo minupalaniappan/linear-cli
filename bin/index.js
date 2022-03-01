@@ -12,6 +12,7 @@ const fs = require('fs')
 const prompt = require('prompt')
 const { sleep } = require('sleep')
 const startCase = require('lodash/startCase')
+const inquirer = require('inquirer')
 
 const argv = yargs(hideBin(process.argv)).argv
 
@@ -109,19 +110,42 @@ class Linear {
     return first(this.ticketName.split('-'))
   }
 
+  parseTeamsArray = (teams) => (
+    get(teams, 'nodes').map((({ name, key, id } ) => ({ name, key, id })))
+  )
+
+  fetchAllTeam = async () => {
+    let teams = await this.client.teams()
+
+
+
+    let teamsArr = this.parseTeamsArray(teams)
+
+    while (teams.pageInfo.hasNextPage) {
+      teams = await teams.fetchNext()
+
+      teamsArr = [
+        ...teamsArr,
+        ...this.parseTeamsArray(teams)
+      ]
+    }
+
+    return teamsArr
+  }
+
   setTicketTeam = async () => {
-    const teams_ = await this.client.teams()
+    const teams = await this.fetchAllTeam()
 
-    let teams = teams_
-
-    inquirer.prompt([
+    return inquirer.prompt([
       {
         type: 'list',
         name: 'teamName',
         message: 'Which team owns this issue?',
-        choices: get(teams, 'rk.nodes').map((({ lk: { key, name, id } }) => ({ key, name, id })))
+        choices: teams.map(({ name, key }) => `${name} ${key}`)
       }
-    ])
+    ]).then(({ teamName }) => Promise.resolve(
+      teams.find(({ key }) => teamName.split(' ')[1] === key).id
+    ))
   }
 
   /* CLI FUNCTION IMPLEMENTATION */
@@ -172,6 +196,9 @@ class Linear {
       await exec(`git branch -m ${newIssue.branchName}`)
 
       console.info(`Info: Switched to new branch ${newIssue.branchName}`)
+      console.info(`Info: Copied to clipboard!`)
+
+      await exec(`echo ${newIssue.branchName} | pbcopy`)
 
       console.info(`\n----- \n`)
 
@@ -197,9 +224,7 @@ class Linear {
         teamId
       })
     } catch {
-      const { team } = await prompt.get(['team'])
-
-      const { id: teamId } = await this.getTeam(team)
+      const teamId = await this.setTicketTeam()
 
       return this.createIssueAPI({
         assigneeId,
