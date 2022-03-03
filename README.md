@@ -1,6 +1,6 @@
 # Linear Command Line Interface
 
-⚠️ This tool is unofficial, and is not sponsored or recognized by the Linear team.
+This tool is unofficial, and is not sponsored or recognized by the Linear team.
 
 ## Intro
 

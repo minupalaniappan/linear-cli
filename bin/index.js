@@ -200,8 +200,6 @@ class Linear {
 
       await exec(`echo ${newIssue.branchName} | pbcopy`)
 
-      console.info(`\n----- \n`)
-
       return pick(newIssue, ['title', 'branchName', 'createdAt'])
     })
   }
