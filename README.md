@@ -17,31 +17,72 @@ npm install -g @minupalaniappan/linear
 ## Commands
 `linear key`
 
+```
+> linear key
+> prompt: apikey: 123
+> Api Key: 123
+```
+
+```
+> linear key
+> Api Key: 123
+```
+
 Set the API key associated to your Linear Account. You can create your Linear API Key from `Linear` > `Settings` > `Account` > `Create Key`. 
 
 ℹ️ The current build only supports one API key at a time.
 
 `linear clear`
 
+```
+> linear clear
+> Info: Storage has been cleared!
+```
+
 Clear your current API key.
 
 `linear me`
+
+```
+> linear clear
+> Info: Storage has been cleared!
+```
 
 Get topical information about your account.
 
 `linear team`
 
+```
+> linear clear
+> Info: Storage has been cleared!
+```
+
 Find information about the team associated to a current branch.
 
 `linear branch`
+
+```
+> linear clear
+> Info: Storage has been cleared!
+```
 
 Find ticket information about the current branch.
 
 `linear open`
 
+```
+> linear clear
+> Info: Storage has been cleared!
+```
+
 Open the current branch in Linear native or Linear web.
 
 `linear new`
+
+```
+> linear clear
+> Info: Storage has been cleared!
+```
 
 Create a sub issue from the current branch - you will be prompted for a title and description of the new sub issue.
 
